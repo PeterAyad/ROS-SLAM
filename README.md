@@ -1,3 +1,13 @@
+# To clone this repo
+```
+git clone --recursive git@github.com:PeterAyad/ROS-SLAM-Project.git
+```
+
+# To run 
+```
+./run.sh
+```
+
 - Each node in ros does a simple fucntion which takes its input as a rostopic and gives its output as a rostopic
 - all nodes can be run using "rosrun" or create a single roslaunch file with all arguments
 

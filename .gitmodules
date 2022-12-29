@@ -10,3 +10,6 @@
 [submodule "src/robotnik_sensors"]
 	path = src/robotnik_sensors
 	url = https://github.com/RobotnikAutomation/robotnik_sensors.git
+[submodule "src/ira_laser_tools"]
+	path = src/ira_laser_tools
+	url = git@github.com:iralabdisco/ira_laser_tools.git

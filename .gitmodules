@@ -1,0 +1,12 @@
+[submodule "src/summit_xl_common"]
+	path = src/summit_xl_common
+	url = https://github.com/RobotnikAutomation/summit_xl_common.git
+[submodule "src/summit_xl_sim"]
+	path = src/summit_xl_sim
+	url = https://github.com/RobotnikAutomation/summit_xl_sim.git
+[submodule "src/robotnik_msgs"]
+	path = src/robotnik_msgs
+	url = https://github.com/RobotnikAutomation/robotnik_msgs.git
+[submodule "src/robotnik_sensors"]
+	path = src/robotnik_sensors
+	url = https://github.com/RobotnikAutomation/robotnik_sensors.git

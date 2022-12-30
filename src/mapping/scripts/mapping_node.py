@@ -19,21 +19,23 @@ from skimage.draw import line_aa
 pub = rospy.Publisher('/robot/map', OccupancyGrid, queue_size=10)
 current_map = np.ones((5000, 5000))*-5
 
-# Cloud to scan
+# # Cloud to scan
 # def cloud_to_scan(scan):
-#     pc = LaserProjection().projectLaser(scan)
-    
-    
+#     tf = Buffer()
+#     tf_listener = TransformListener(tf)
 
 # 0 -> 361 front + 0 -> 361 rear : xls
 
 def callback(scanFront, scanRear, odom):
     # global current_map
+    # rospy.loginfo("callback")
+    # rospy.loginfo("odom: " + str(odom.pose.pose.position.x) + " " + str(odom.pose.pose.position.y))
+    # rospy.loginfo(scanFront)
+    # rospy.loginfo(scanRear)
     
-    
-    rospy.loginfo("sending map")
+    # rospy.loginfo("sending map")
     mapObject = OccupancyGrid()
-    mapObject.header.frame_id = "map"
+    mapObject.header.frame_id = "robot_map"
     # mapObject.header.
     mapObject.info.width = 10
     mapObject.info.height = 10

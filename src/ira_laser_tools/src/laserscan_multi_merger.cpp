@@ -148,7 +148,6 @@ LaserscanMerger::LaserscanMerger()
 
 void LaserscanMerger::scanCallback(const sensor_msgs::LaserScan::ConstPtr &scan, std::string topic)
 {
-	ROS_INFO("Received scan from topic %s", topic.c_str());
 	sensor_msgs::PointCloud tmpCloud1, tmpCloud2;
 	sensor_msgs::PointCloud2 tmpCloud3;
 
@@ -182,8 +181,6 @@ void LaserscanMerger::scanCallback(const sensor_msgs::LaserScan::ConstPtr &scan,
 		if (clouds_modified[i])
 			totalClouds++;
 
-	ROS_INFO("Total clouds received: %d", totalClouds);
-	ROS_INFO("Total clouds expected: %ld", clouds_modified.size());
 
 	// Go ahead only if all subscribed scans have arrived
 	if (totalClouds == clouds_modified.size())
@@ -201,7 +198,6 @@ void LaserscanMerger::scanCallback(const sensor_msgs::LaserScan::ConstPtr &scan,
 				clouds_modified[i] = false;
 		}
 
-		ROS_INFO("Publishing merged cloud");
 		point_cloud_publisher_.publish(merged_cloud);
 
 		Eigen::MatrixXf points;

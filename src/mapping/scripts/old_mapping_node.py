@@ -35,7 +35,7 @@ def callback(scanFront, scanRear, odom):
     
     # rospy.loginfo("sending map")
     mapObject = OccupancyGrid()
-    mapObject.header.frame_id = "robot_map"
+    mapObject.header.frame_id = "robot_base_link"
     # mapObject.header.
     mapObject.info.width = 10
     mapObject.info.height = 10

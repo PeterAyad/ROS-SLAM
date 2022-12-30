@@ -142,7 +142,7 @@ class Mapping(object):
         self.lidar_points = []
 
     def callback(self, lidar_msg, pose_msg):
-        rospy.loginfo("Size of lidar_msg: %d", len(lidar_msg.ranges))
+        # rospy.loginfo("Size of lidar_msg: %d", len(lidar_msg.ranges))
         self.lidar_points = lidar_msg.ranges
         self.drone_pose = pose_msg.pose.pose
 
@@ -261,7 +261,7 @@ class Mapping(object):
         OGM = OccupancyGrid()
         # Set up this function about the header
         OGM.header.stamp = rospy.Time.now()
-        OGM.header.frame_id = "robot_map"
+        OGM.header.frame_id = "robot_base_link"
         OGM.header.seq = 0
         # Set up this function about the info
         OGM.info.resolution = resolution
@@ -316,7 +316,7 @@ def main():
 
     rate = rospy.Rate(0.2)
     while not rospy.is_shutdown():
-        rospy.loginfo("Mapping node started")
+        # rospy.loginfo("Mapping node started")
         mapping.map_with_OGM(mapping.lidar_points, mapping.drone_pose)
         rate.sleep()
 

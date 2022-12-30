@@ -127,7 +127,7 @@ if __name__ == '__main__':
     rospy.init_node('robot_teleoperation_node')
 
     # Publish messages
-    pub_vel = rospy.Publisher('/robot/cmd_vel/', Twist, queue_size=10)
+    pub_vel = rospy.Publisher('/robot/robotnik_base_control/cmd_vel', Twist, queue_size=10)
     pub_pan = rospy.Publisher('/robot/joint_pan_position_controller/command', Float64, queue_size = 1)
     pub_tilt = rospy.Publisher('/robot/joint_tilt_position_controller/command', Float64, queue_size = 1)
 

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>mapping</name>
+  <name>slam</name>
   <version>0.0.0</version>
-  <description>The mapping package</description>
+  <description>The slam package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/mapping</url> -->
+  <!-- <url type="website">http://wiki.ros.org/slam</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -52,10 +52,6 @@
   <build_depend>rospy</build_depend>
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>rospy</exec_depend>
-
-  <build_depend>gazebo_msgs</build_depend>
-  <build_export_depend>gazebo_msgs</build_export_depend>
-  <exec_depend>gazebo_msgs</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

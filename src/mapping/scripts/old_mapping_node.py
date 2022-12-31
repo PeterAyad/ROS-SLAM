@@ -40,8 +40,8 @@ def callback(scanFront, scanRear, odom):
     mapObject.info.width = 10
     mapObject.info.height = 10
     mapObject.info.resolution = 1
-    mapObject.info.origin.position.x = 0
-    mapObject.info.origin.position.y = 0
+    mapObject.info.origin.position.x = -5
+    mapObject.info.origin.position.y = -5
     mapObject.info.origin.position.z = 0
     mapObject.info.origin.orientation.x = 0
     mapObject.info.origin.orientation.y = 0

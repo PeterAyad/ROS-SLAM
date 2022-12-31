@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from glob import glob
 import rospy
 from sensor_msgs.msg import LaserScan
@@ -11,21 +9,11 @@ from math import pi, sin, cos, degrees
 from skimage.draw import line
 import cv2 as cv
 from nav_msgs.msg import OccupancyGrid
-from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
-from tf2_ros import Buffer, TransformListener
-from sensor_msgs import point_cloud2
-from laser_geometry import LaserProjection
-import message_filters
 
 
 BGR_RED_COLOR = (0, 0, 255)
 BGR_BLUE_COLOR = (255, 0, 0)
 BGR_GREEN_COLOR = (0, 255, 0)
-
-# GRAYSCALE_BLACK_COLOR = 0
-# GRAYSCALE_WHITE_COLOR = 255
-
-# CM_IN_METER = 100
 
 
 class ScanObj:
@@ -38,8 +26,8 @@ class ScanObj:
 
 
 class RayCaster:
-    def __init__(self, map, angle_range=360, angle_accuracy=0.5,
-                 length_range=3, pixel_size=0.1, occ_th=0.9, offset_x=125, offset_y=125):
+    def __init__(self, map, angle_range=250, angle_accuracy=2,
+                 length_range=12, pixel_size=.05, occ_th=.9, offset_x=300, offset_y=300):
         """
         Description: constructor for the ray caster.
 
@@ -116,49 +104,41 @@ class RayCaster:
           - measurements: numpy array for the distances in pixels.
           The ray that's not collided has a distance of -1
         """
-        
-        angle_min = scan.angle_min
-        angle_max = scan.angle_max
-        angle_increment = np.degrees(scan.angle_increment)
-        stepsCount = int((angle_max - angle_min) / angle_increment)
-        rangeLength = len(scan.ranges)
-        
-        size = 680
-
+        global scanSize
 
         # rospy.loginfo("cast")
         x, y, theta = pose
         x = int(x / self.pixel_size) + self.offset_x
         y = int(y / self.pixel_size) + self.offset_y
-        ranges = np.array(scan.ranges)[:680] / self.pixel_size
+        ranges = np.array(scan.ranges)[:scanSize] / self.pixel_size
 
         if self.X_org is None:
             angle_min = scan.angle_min
             angle_max = scan.angle_max
             angle_increment = np.degrees(scan.angle_increment)
 
-            start_angle = np.degrees(angle_min)
-            end_angle = np.degrees(angle_max)
+            start_angle = int(np.degrees(angle_min))
+            end_angle = int(np.degrees(angle_max))
             start_len = int(scan.range_min / self.pixel_size)
             end_len = int(scan.range_max / self.pixel_size)
 
             # size = int((end_angle-start_angle)//angle_increment)
-            self.measurements = np.ones(680) * -1
+            self.measurements = np.ones(scanSize) * -1
 
             self.angles = np.arange(
-                start_angle, end_angle, angle_increment)[:680]
+                start_angle, end_angle, angle_increment)[:scanSize]
             self.cos_vec = np.cos(np.radians(self.angles)).reshape(-1, 1)
             self.sin_vec = np.sin(np.radians(self.angles)).reshape(-1, 1)
             self.dst_vec = np.arange(start_len, end_len, 1).reshape(1, -1)
-            self.X_org = np.matmul(self.cos_vec, self.dst_vec).astype(np.int32)
-            self.Y_org = np.matmul(self.sin_vec, self.dst_vec).astype(np.int32)
+            self.X_org = np.matmul(self.cos_vec, self.dst_vec).astype(np.int)
+            self.Y_org = np.matmul(self.sin_vec, self.dst_vec).astype(np.int)
 
             # ranges = ranges[:size]
 
         X = x + self.X_org * np.cos(theta) - self.Y_org * np.sin(theta)
         Y = y + self.X_org * np.sin(theta) + self.Y_org * np.cos(theta)
-        X = X.astype(np.int32)
-        Y = Y.astype(np.int32)
+        X = X.astype(np.int)
+        Y = Y.astype(np.int)
         X_Y = (X, Y)
 
         X[X < 0] = 0
@@ -200,8 +180,8 @@ class RayCaster:
 
             scan_epsx = x + scan_epsx
             scan_epsy = y + scan_epsy
-            scan_epsx = scan_epsx.astype(np.int32)
-            scan_epsy = scan_epsy.astype(np.int32)
+            scan_epsx = scan_epsx.astype(np.int)
+            scan_epsy = scan_epsy.astype(np.int)
 
             scan_epsx[scan_epsx < 0] = 0
             scan_epsx[scan_epsx >= self.map.shape[1]] = self.map.shape[1]-1
@@ -211,9 +191,9 @@ class RayCaster:
             # for i, j in zip(scan_epsx, scan_epsy):
             #   cv.circle(img, (i, j), 2, BGR_GREEN_COLOR, 5)
 
-            img = cv.rotate(img, cv.ROTATE_90_CLOCKWISE)
-            img = cv.flip(img, 0)
-            cv.imshow("Ray Casting", img)
+            # img = cv.rotate(img, cv.ROTATE_90_CLOCKWISE)
+            # img = cv.flip(img, 0)
+            # cv.imshow("Ray Casting", img)
 
         return measurements, mask_collided, (scan_epsx, scan_epsy)
 
@@ -227,8 +207,8 @@ class Particle(object):
     - a map consisting of landmarks
     """
 
-    def __init__(self, num_particles, noise, pixel_size=0.1,
-                 offset_x=125, offset_y=125, map_h=2500, map_w=2500):
+    def __init__(self, num_particles, noise, pixel_size=.005,
+                 offset_x=300, offset_y=300, map_h=600, map_w=600):
         """Creates the particle and initializes location/orientation"""
         self.noise = noise
 
@@ -298,14 +278,14 @@ class Particle(object):
         Input:
             - scan : LaserMsg
         """
-
+        global scanSize
         # rospy.loginfo('sensor update')
         # beam based sensor model - slide 5
         # @ http://ais.informatik.uni-freiburg.de/teaching/ss11/robotics/slides/07-sensor-models.pdf
 
         est, mask_collided, laser_eps = self.ray_caster.cast(self.pose, scan,
                                                              show_rays=True)
-        ranges = np.array(scan.ranges)[:680] / self.pixel_size
+        ranges = np.array(scan.ranges)[:scanSize] / self.pixel_size
 
         error = np.sum(np.abs(est[mask_collided] - ranges[mask_collided]))
 
@@ -390,6 +370,12 @@ class Particle(object):
         self.map[pf_y, pf_x] = self.map[pf_y, pf_x] + \
             invmod[pf_y, pf_x] - self.prior
         # rospy.loginfo(self.map)
+        # for i in range(int(self.pose[1])- 10, int(self.pose[1]) + 10):
+        #     for j in range(int(self.pose[0])- 10, int(self.pose[0]) + 10):
+        #         self.map[i +int(self.map.shape[0]/2), j+int(self.map.shape[0]/2)] = 1
+        # self.map[int(self.pose[1]), int(self.pose[0])] = 1
+        # cv.imshow("map", self.map)
+        # cv.waitKey(1)
 
 
 class OdometryData(object):
@@ -500,6 +486,13 @@ class FastSlam:
         best_particle = max(self.particles, key=lambda p: p.weight)
         return best_particle.map
 
+    def get_pose(self):
+        """Returns the pose of the best particle."""
+
+        # rospy.loginfo('get pose')
+        best_particle = max(self.particles, key=lambda p: p.weight)
+        return best_particle.pose
+
 
 def normalize_angle(angle):
     # rospy.loginfo('normalize angle')
@@ -538,26 +531,12 @@ godom = False
 
 read_first_odom = False
 
-stamp = LaserScan().header.stamp
-
 
 def lidar_callback(scan):
     # rospy.loginfo("lidar callback")
     global gscan
-    global stamp
-    global godom
-
-    world_points = get_transform_cloud(scan, godom)
-
-    # calculate the range of the lidar
-    ranges = []
-    for i in range(len(world_points)):
-        ranges.append((world_points[i][0]**2 + world_points[i][1]**2)**0.5)
-
-    scan.ranges = ranges
-
+    scan.ranges = np.array(scan.ranges)*resolution
     gscan = scan
-    stamp = scan.header.stamp
 
 
 def odom_callback(odom):
@@ -620,132 +599,19 @@ def odom_callback(odom):
         read_first_odom = True
 
 
+resolution = 0.01
+scanSize = 800
+
+
 def get_transform_cloud(source_frame, target_frame):
     """Get the transform from the robot frame to the laser frame."""
     # get the transform from the robot frame to the laser frame
     cloud = LaserProjection().projectLaser(source_frame)
-    transform = tf_buffer.lookup_transform(
-        'robot_odom', source_frame.header.frame_id.replace("/", ""), rospy.Time())
-    pcd2_laser = do_transform_cloud(cloud, transform)  # returns PointCloud2
-    world_points = list(point_cloud2.read_points(
-        pcd2_laser, field_names=("x", "y", "z"), skip_nans=False))
+    transform = tf_buffer.lookup_transform(target_frame.header.frame_id, source_frame.header.frame_id.replace("/",""), rospy.Time())
+    pcd2_laser = do_transform_cloud(cloud, transform) #returns PointCloud2
+    world_points = list(point_cloud2.read_points(pcd2_laser, field_names=("x", "y", "z"), skip_nans=True))
     # rospy.loginfo(world_points)
     return world_points
-
-
-tf_buffer = None
-tf_listener = None
-
-
-lastLaserScan = None
-
-
-def callback_handler(scan,  odom):
-    # rospy.loginfo("lidar callback")
-    global gscan
-    global stamp
-    global godom
-
-    angle_min = scan.angle_min
-    angle_max = scan.angle_max
-    angle_increment = np.degrees(scan.angle_increment)
-
-    # if len(scan.ranges) < 701 or int((angle_max - angle_min) / angle_increment) < 701:
-    #     return
-
-    world_points = get_transform_cloud(scan, godom)
-
-    # calculate the range of the lidar
-    ranges = []
-    for i in range(len(world_points)):
-        ranges.append((world_points[i][0]**2 + world_points[i][1]**2)**0.5)
-
-    print(ranges[0:4])
-
-    scan.ranges = ranges
-
-    gscan = scan
-    stamp = scan.header.stamp
-
-    global t1
-    global pt1
-    global pt2
-    global r1
-    global tr
-    global r2
-    global read_first_odom
-    global fs
-    global lastLaserScan
-
-    t2 = int(str(odom.header.stamp))
-
-    if t2 - t1 >= INTERVAL_IN_NS:
-        # advance time
-        t1 = t2
-
-        # advance readings
-        pt1[:] = pt2[:]
-
-        # get new readings
-        pt2[0] = odom.pose.pose.position.x
-        pt2[1] = odom.pose.pose.position.y
-        orientation_q = odom.pose.pose.orientation
-        # new theta
-        orientation_list = [orientation_q.x,
-                            orientation_q.y, orientation_q.z, orientation_q.w]
-        (_, _, theta) = euler_from_quaternion(orientation_list)
-        pt2[2] = theta
-        # only executed when there is a previous reading
-        # not in the first callback
-        if read_first_odom:
-            # Odometry model - slide 10
-            # @ http://ais.informatik.uni-freiburg.de/teaching/ss15/robotics/slides/06-motion-models.pdf
-
-            # calculate s1, t, s2
-            # translation
-            tr = np.sqrt((pt1[0]-pt2[0])**2+(pt1[1]-pt2[1])**2)
-            ydiff = np.around(pt2[1]-pt1[1], 2)
-            xdiff = np.around(pt2[0]-pt1[0], 2)
-            # initial rotation
-            r1 = np.arctan2(ydiff, xdiff) - pt1[2]
-            # final rotation
-            r2 = pt2[2] - pt1[2] - r1
-            godom = OdometryData(r1, tr, r2)
-            # rospy.loginfo(godom)
-            # rospy.loginfo('\n')
-
-            # rospy.loginfo(godom)
-        if godom and gscan:
-            fs.fast_slam(godom, gscan)
-            godom = False  # None
-            gscan = False  # None
-            if lastLaserScan == None or lastLaserScan.header.stamp != scan.header.stamp:
-                fsmap = fs.get_map() * 100
-                mapObject = OccupancyGrid()
-                mapObject.header.frame_id = "robot_map"
-                mapObject.info.width = 2500
-                mapObject.info.height = 2500
-                mapObject.info.resolution = 0.1
-                mapObject.info.origin.position.x = (-2500/2) * 0.1
-                mapObject.info.origin.position.y = (-2500/2) * 0.1
-                mapObject.info.origin.position.z = 0
-                mapObject.info.origin.orientation.x = 0
-                mapObject.info.origin.orientation.y = 0
-                mapObject.info.origin.orientation.z = 0
-                mapObject.info.origin.orientation.w = 1
-                mapObject.data = (fsmap).astype(
-                    dtype=np.int8).flatten().tolist()
-                mapObject.header.stamp = stamp
-                pub.publish(mapObject)
-                lastLaserScan = scan
-            # cv.waitKey(1)
-
-        read_first_odom = True
-
-
-pub = rospy.Publisher('/robot/map', OccupancyGrid, queue_size=10)
-
-fs = None
 
 
 def main():
@@ -756,44 +622,55 @@ def main():
     global gscan
     global godom
     global fs
-    global stamp
-    global tf_buffer
-    global tf_listener
+    global resolution
 
     rospy.init_node('slam', anonymous=True)
-    rospy.loginfo('slam node started')
-
-    tf_buffer = Buffer()
-    tf_listener = TransformListener(tf_buffer)
 
     # initial timestamp
     t1 = int(str(rospy.Time.now()))  # t
 
-    front_laser_sub = message_filters.Subscriber("/scan_multi", LaserScan)
-    odom_sub = message_filters.Subscriber("/robot/robotnik_base_control/odom",
-                                          Odometry)
-    ts = message_filters.ApproximateTimeSynchronizer([front_laser_sub, odom_sub],
-                                                     10, 0.1, allow_headerless=True)
-    ts.registerCallback(callback_handler)
+    # sensors and map subscribtion
+    rospy.Subscriber("/scan_multi", LaserScan, lidar_callback)
+    rospy.Subscriber("/robot/robotnik_base_control/odom",
+                     Odometry, odom_callback)
 
-    # # sensors and map subscribtion
-    # rospy.Subscriber("/scan_multi", LaserScan, lidar_callback)
-    # rospy.Subscriber("/robot/robotnik_base_control/odom",
-    #                  Odometry, odom_callback)
+    pub = rospy.Publisher('/robot/map', OccupancyGrid, queue_size=10)
 
-    # pub = rospy.Publisher('/robot/map', OccupancyGrid, queue_size=10)
-
+    dimension = 900
     # how many particles
     num_particles = 5
     noise = [0.001, 0.001, 0.000]
-    particles = [Particle(num_particles, noise, pixel_size=0.1,
-                          offset_x=1250, offset_y=1250, map_h=2500, map_w=2500) for _ in range(num_particles)]
+    particles = [Particle(num_particles, noise, pixel_size=resolution,
+                          offset_x=int(dimension/2), offset_y=int(dimension/2), map_h=dimension, map_w=dimension) for _ in range(num_particles)]
 
     # set the axis dimensions
     fs = FastSlam(particles)
 
     rate = rospy.Rate(FREQ)  # rate of the loop
     while not rospy.is_shutdown():
+        myMap = np.ones((int(50/0.25), int(50/0.25)))*-1
+        fsmap = fs.get_map() * 100
+        fspose = fs.get_pose()
+        mapObject = OccupancyGrid()
+        mapObject.header.frame_id = "robot_map"
+        mapObject.info.width = dimension
+        mapObject.info.height = dimension
+        mapObject.info.resolution = resolution
+        mapObject.info.origin.position.x = -25
+        mapObject.info.origin.position.y = -25
+        # fsmap = np.where(fsmap > 0.5, 100, 0)
+
+        # for i in range(int(fspose[1]) - 10, int(fspose[1]) + 10):
+        #     for j in range(int(fspose[0]) - 10, int(fspose[0]) + 10):
+        #         fsmap[i + int(fsmap.shape[0]/2), j +
+        #               int(fsmap.shape[0]/2)] = 1
+
+        myMap[int((fsmap.shape[0]/2+fspose[0])*resolution),
+              int((fsmap.shape[0]/2+fspose[1])*resolution)] = 1
+        mapObject.data = myMap.flatten().tolist()*100
+        mapObject.data = np.array(mapObject.data).astype(np.int8)
+        pub.publish(mapObject)
+        print("published")
         rate.sleep()
 
 

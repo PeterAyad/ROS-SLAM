@@ -167,6 +167,7 @@ from tf2_sensor_msgs.tf2_sensor_msgs import do_transform_cloud
 from tf2_ros import Buffer, TransformListener
 from sensor_msgs import point_cloud2
 from laser_geometry import LaserProjection
+
 # from cmp_robot.msg import Data
 
 
@@ -270,8 +271,8 @@ def callback_handler(front_scan,  odom):
     rospy.loginfo("Published the map")
     
 
-resolution = 0.25 # for fast mapping
-# resolution = 0.02 # for high resolution mapping
+# resolution = 0.25 # for fast mapping
+resolution = 0.02 # for high resolution mapping
 
 
 if __name__ == '__main__':

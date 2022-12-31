@@ -109,7 +109,7 @@ def mapping_callback(scan,  odom):
 
         y, x = map.draw_line(robot_x, robot_y, point[0], point[1])
         
-        if not np.isnan(d) and d != 30 and is_inside_mat(y,x,map.world):
+        if not np.isnan(d) and d != SENSOR_MAX_RANGE and is_inside_mat(y,x,map.world):
             map.world[y,x] += sensor_model_l_occ - sensor_model_l_prior
 
     occ_grid_publisher.publish(map.as_occ_grid(stamp=scan.header.stamp))
@@ -119,6 +119,7 @@ def mapping_callback(scan,  odom):
 resolution = 0.25 # for fast mapping
 # resolution = 0.02 # for high resolution mapping
 
+SENSOR_MAX_RANGE = 30
 
 if __name__ == '__main__':
    

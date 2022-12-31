@@ -77,7 +77,7 @@
 #     cosy_cosp = 1 - 2 * (q_y * q_y + q_z * q_z)
 #     return np.arctan2(siny_cosp, cosy_cosp)
 
-# RES = 0.02
+# RES = resolution
 # DIM=1000
 # def callback_handler(front_scan,  odom):
 #     """callback function handler for the time synchronizer"""
@@ -237,14 +237,15 @@ def callback_handler(front_scan,  odom):
     """callback function handler for the time synchronizer"""
     rospy.loginfo("Callback handler called")
 
+    global resolution
     world_points = get_transform_cloud(front_scan, odom)
     # extract the data from the messages
   
     map_msg = OccupancyGrid()
     map_msg.header.frame_id = 'robot_map'
-    map_msg.info.resolution = 0.02
-    map_msg.info.width = int(50/0.02)
-    map_msg.info.height = int(50/0.02)
+    map_msg.info.resolution = resolution
+    map_msg.info.width = int(50/resolution)
+    map_msg.info.height = int(50/resolution)
     map_msg.info.origin.position.x = -25
     map_msg.info.origin.position.y = -25
     map_msg.header.stamp = front_scan.header.stamp
@@ -252,10 +253,10 @@ def callback_handler(front_scan,  odom):
     # put the world points in the world array
     # loop over the world_points
     for i, point in enumerate(world_points):
-        d = front_scan.ranges[i] / 0.02
+        d = front_scan.ranges[i] / resolution
         # rospy.loginfo(int(point[0]))
         # rospy.loginfo(int(point[1]))
-        ip, jp, is_hit = bresenham(int((odom.pose.pose.position.x+25)/0.02), int((odom.pose.pose.position.y+25)/0.02), int((point[0]+25)/0.02), int((point[1]+25)/0.02), d)
+        ip, jp, is_hit = bresenham(int((odom.pose.pose.position.x+25)/resolution), int((odom.pose.pose.position.y+25)/resolution), int((point[0]+25)/resolution), int((point[1]+25)/resolution), d)
         if not np.isnan(d) and d != 30 and is_inside(int(ip),int(jp)):
             # rospy.loginfo(ip)
             # rospy.loginfo(jp)
@@ -269,11 +270,15 @@ def callback_handler(front_scan,  odom):
     rospy.loginfo("Published the map")
     
 
+resolution = 0.25 # for fast mapping
+# resolution = 0.02 # for high resolution mapping
+
+
 if __name__ == '__main__':
     sensor_model_l_occ = p2l(0.75)
     sensor_model_l_prior = p2l(0.5)
     sensor_model_l_free = p2l(0.45)
-    world = sensor_model_l_prior * np.ones((2500, 2500), dtype=np.float32)
+    world = sensor_model_l_prior * np.ones((int(50/resolution), int(50/resolution)), dtype=np.float32)
     rospy.init_node('SensorModule', anonymous=True)
     tf_buffer = Buffer()
     tf_listener = TransformListener(tf_buffer)

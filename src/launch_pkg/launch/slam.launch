@@ -2,7 +2,7 @@
 <launch>
 
 	<!-- <node pkg="teleoperation" type="teleoperation_node.py" name="teleoperation_node" output="screen"></node> -->
-	<!-- <node pkg="mapping" type="mapping_node.py" name="mapping_node" output="screen"></node> -->
+	<node pkg="slam" type="slam.py" name="slam_node" output="screen"></node>
 
 
 	<node pkg="ira_laser_tools" name="laserscan_multi_merger" type="laserscan_multi_merger" output="screen">

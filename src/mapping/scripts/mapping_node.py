@@ -12,7 +12,7 @@ from sensor_msgs.msg import LaserScan
 from tf2_ros import Buffer, TransformListener
 from sensor_msgs import point_cloud2
 from laser_geometry import LaserProjection
-from utils import log_2_probability, probability_2_log, is_inside_mat
+from mapping.utils import log_2_probability, probability_2_log, is_inside_mat
 
 from skimage.draw import line
 
